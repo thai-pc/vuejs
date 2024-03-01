@@ -1,6 +1,6 @@
 <template>
-    <form @submit.prevent="createUsers()">
-        <a-card title="Tạo mới tài khoản" style="width: 100%;">
+    <form @submit.prevent="updateUsers()">
+        <a-card title="Cập nhật tài khoản" style="width: 100%;">
             <div class="row mb-3">
                 <div class="col-12 col-sm-4">
                     <div class="row">
@@ -93,6 +93,14 @@
                         </div>
                     </div>
                     <div class="row mb-3">
+                        <div class="col-12 col-sm-3 text-start text-sm-end"></div>
+                        <div class="col-12 col-sm-5">
+                            <a-checkbox v-model:checked="users.change_password">
+                                Đổi mật khẩu
+                            </a-checkbox>
+                        </div>
+                    </div>
+                    <div class="row mb-3" v-if="users.change_password == true">
                         <div class="col-12 col-sm-3 text-start text-sm-end">
                             <label>
                                 <span class="text-danger me-1">*</span>
@@ -106,7 +114,7 @@
                             <small v-if="errors.password" class="text-danger">{{ errors.password[0] }}</small>
                         </div>
                     </div>
-                    <div class="row mb-3">
+                    <div class="row mb-3" v-if="users.change_password == true">
                         <div class="col-12 col-sm-3 text-start text-sm-end">
                             <label>
                                 <span class="text-danger me-1">*</span>
@@ -116,6 +124,26 @@
                         <div class="col-12 col-sm-5">
                             <a-input-password placeholder="Xác nhận mật khẩu" allow-clear
                                 v-model:value="users.password_confirmation" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12 col-sm-3 text-start text-sm-end">
+                            <label>
+                                <span>Lần đăng nhập gần đây:</span>
+                            </label>
+                        </div>
+                        <div class="col-12 col-sm-5">
+                            <span>{{ users.login_at }}</span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12 col-sm-3 text-start text-sm-end">
+                            <label>
+                                <span>Lần đổi mật khẩu gần đây:</span>
+                            </label>
+                        </div>
+                        <div class="col-12 col-sm-5">
+                            <span>{{ users.change_password_at }}</span>
                         </div>
                     </div>
                 </div>
@@ -137,15 +165,17 @@
 </template>
 <script setup>
 import { ref, reactive, toRefs } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { message } from 'ant-design-vue';
 import { useMenu } from '../../../stores/use-menu';
+import dayjs from 'dayjs';
 import axios from 'axios';
 
 const store = useMenu();
 store.onSelectedKeys(["admin-users"]);
 
 const router = useRouter();
+const route = useRoute();
 const users_status = ref([]);
 const departments = ref([]);
 const errors = ref({});
@@ -156,16 +186,27 @@ const users = reactive({
     password: '',
     password_confirmation: '',
     department_id: [],
-    status_id: []
+    status_id: [],
+    change_password: false,
+    login_at: '',
+    change_password_at: ''
 });
 
 const filterOption = (input, option) => {
     return option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0;
 };
-
-const getUsersCreate = () => {
-    axios.get('http://127.0.0.1:8000/api/users/create')
+const getUsersEdit = () => {
+    axios.get(`http://127.0.0.1:8000/api/users/${route.params.id}/edit`)
         .then((response) => {
+            users.username = response.data.users.username;
+            users.status_id = response.data.users.status_id;
+            users.name = response.data.users.name;
+            users.email = response.data.users.email;
+            users.department_id = response.data.users.department_id;
+
+            response.data.users.login_at ? users.login_at = dayjs(response.data.users.login_at).format('DD/MM/YYYY - HH:mm:ss') : users.login_at = "Chưa có lượt đăng nhập"
+            dayjs(response.data.users.change_password_at).format('DD/MM/YYYY - HH:mm:ss') ? users.change_password_at = response.data.users.change_password_at : users.change_password_at = "Chưa có lượt đổi mật khẩu"
+
             const modifiedUsersStatus = response.data.users_status.map(item => ({
                 value: item.id,
                 label: item.name
@@ -183,11 +224,11 @@ const getUsersCreate = () => {
             console.log(error);
         })
 }
-const createUsers = () => {
-    axios.post('http://127.0.0.1:8000/api/users', users)
+const updateUsers = () => {
+    axios.put(`http://127.0.0.1:8000/api/users/${route.params.id}`, users)
         .then((response) => {
             if (response.status == 200) {
-                message.success('Tạo tài khoản thành công');
+                message.success('Cập nhật tài khoản thành công');
                 router.push({ name: "admin-users" });
             }
         })
@@ -195,10 +236,11 @@ const createUsers = () => {
             errors.value = error.response.data.errors;
         })
 }
+getUsersEdit();
 () => ({
     ...toRefs(users)
 })
-getUsersCreate();
+
 
 
 </script>

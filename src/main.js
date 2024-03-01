@@ -4,7 +4,7 @@ import router from './router/index.js'
 import axios from 'axios';
 window.axios = axios;
 
-import { Avatar, Table, Card, Menu, List, Drawer, Button, message } from 'ant-design-vue';
+import { Popconfirm ,Checkbox, Input, Select, Avatar, Table, Card, Menu, List, Drawer, Button, message } from 'ant-design-vue';
 import App from './App.vue'
 
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -22,6 +22,10 @@ const pinia = createPinia();
 const app = createApp(App);
 app.component('font-awesome-icon', FontAwesomeIcon);
 app.use(pinia);
+app.use(Popconfirm);
+app.use(Checkbox);
+app.use(Input);
+app.use(Select);
 app.use(Avatar);
 app.use(Card);
 app.use(Table);
